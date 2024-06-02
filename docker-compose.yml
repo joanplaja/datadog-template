@@ -1,0 +1,42 @@
+services:
+  app:
+    container_name: app
+    build: .
+    volumes:
+      - ./app.py:/app/app.py
+    labels:
+      com.datadoghq.ad.logs: '[{"source":"docker", "service":"app"}]'
+    logging:
+      driver: fluentd
+      options:
+        fluentd-address: localhost:24224
+        fluentd-async: "true"
+    depends_on:
+      - fluent-bit
+
+  fluent-bit:
+    container_name: fluent-bit
+    image: grafana/fluent-bit-plugin-loki:latest
+    environment:
+      - DATADOG_API_KEY=CHANGE_ME
+    volumes:
+      - ./fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
+      - ./parser.conf:/fluent-bit/etc/parsers.conf
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+  # datadog:
+  #   container_name: datadog
+  #   image: gcr.io/datadoghq/agent:7
+  #   links:
+  #    - app
+  #   environment:
+  #     - DD_API_KEY=CHANGE_ME
+  #     - DD_SITE=datadoghq.eu
+  #     - DD_LOGS_ENABLED=true
+  #     - DD_HOSTNAME=local
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #     - /proc/:/host/proc/:ro
+  #     - /sys/fs/cgroup:/host/sys/fs/cgroup:ro
+  #     - /var/lib/docker/containers:/var/lib/docker/containers:ro 
